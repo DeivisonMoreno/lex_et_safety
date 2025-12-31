@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@layer utilities {
+    @keyframes lexPulse {
+        0% {
+            transform: scale(1);
+            opacity: 0.9;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));
+        }
+        50% {
+            transform: scale(1.15);
+            opacity: 1;
+            filter: drop-shadow(0 0 12px rgba(255,255,255,0.5));
+        }
+        100% {
+            transform: scale(1);
+            opacity: 0.9;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));
+        }
+    }
+
+    .animate-lex-pulse {
+        animation: lexPulse 1.8s ease-in-out infinite;
+    }
+
+    /* Si quieres un spinner circular detrás */
+    @keyframes lexSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .animate-lex-spin {
+        animation: lexSpin 2.4s linear infinite;
+    }
+}
