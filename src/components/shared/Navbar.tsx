@@ -25,6 +25,7 @@ const navigation = [
     { name: "Procesos", path: "/procesos" },
     { name: "Nuevo Proceso", path: "/nuevoProceso" },
     { name: "Bases Procesales", path: "/basesProcesales" },
+    { name: "Nuevo Juzgado", path: "/NuevoJuzgado" },
 ];
 
 const NavBar: React.FC = () => {

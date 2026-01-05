@@ -636,14 +636,8 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                         <div className="py-10 text-center text-[9px] text-slate-400">
                             Cargando observaciones…
                         </div>
-                    ) : !detailObservacion?.data.observaciones.length ? (
-                        <div className="py-10 text-center text-[9px] text-slate-400">
-                            No hay observaciones registradas
-                        </div>
                     ) : (
                         <div className="space-y-4">
-
-                            {/* NUEVA OBSERVACIÓN */}
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                                 <label className="block mb-1 text-[8px] font-semibold text-slate-600">
                                     Nueva observación
@@ -703,80 +697,55 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
               disabled:cursor-not-allowed disabled:bg-sky-300
             "
                                     >
-                                        {sendingObservacion ? (
-                                            <>
-                                                <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
-                                                    <circle
-                                                        className="opacity-25"
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                        stroke="currentColor"
-                                                        strokeWidth="4"
-                                                        fill="none"
-                                                    />
-                                                    <path
-                                                        className="opacity-75"
-                                                        fill="currentColor"
-                                                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z"
-                                                    />
-                                                </svg>
-                                                Guardando
-                                            </>
-                                        ) : (
-                                            "Agregar observación"
-                                        )}
+                                        {sendingObservacion ? "Guardando..." : "Agregar observación"}
                                     </button>
                                 </div>
                             </div>
-
-                            {/* HISTÓRICO */}
-                            <div className="rounded-lg border border-slate-200 overflow-hidden">
-                                <div className="relative overflow-x-auto">
-                                    <table className="min-w-full text-[9px] border-collapse">
-
-                                        {/* HEADER */}
-                                        <thead className="sticky top-0 z-10 bg-slate-100">
-                                            <tr>
-                                                <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b border-slate-200">
-                                                    Observación
-                                                </th>
-                                                <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b border-slate-200 whitespace-nowrap">
-                                                    Usuario
-                                                </th>
-                                                <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b border-slate-200 whitespace-nowrap">
-                                                    Fecha
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        {/* BODY */}
-                                        <tbody className="divide-y divide-slate-100">
-                                            {detailObservacion.data.observaciones.map((item, index) => (
-                                                <tr
-                                                    key={index}
-                                                    className="transition-colors hover:bg-sky-50"
-                                                >
-                                                    <td className="px-3 py-2 text-slate-800 leading-snug max-w-md break-words">
-                                                        {item.observacion}
-                                                    </td>
-                                                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap font-medium">
-                                                        {item.usuario}
-                                                    </td>
-                                                    <td className="px-3 py-2 text-[8px] text-slate-500 whitespace-nowrap">
-                                                        {new Date(item.fecha_actualizacion).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                            {!detailObservacion?.data.observaciones.length && (
+                                <div className="py-6 text-center text-[9px] text-slate-400">
+                                    No hay observaciones registradas
                                 </div>
-                            </div>
+                            )}
+                            {!!detailObservacion?.data.observaciones.length && (
+                                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                                    <div className="relative overflow-x-auto">
+                                        <table className="min-w-full text-[9px] border-collapse">
+                                            <thead className="sticky top-0 z-10 bg-slate-100">
+                                                <tr>
+                                                    <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b">
+                                                        Observación
+                                                    </th>
+                                                    <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b">
+                                                        Usuario
+                                                    </th>
+                                                    <th className="px-3 py-2 text-left font-semibold text-slate-700 border-b">
+                                                        Fecha
+                                                    </th>
+                                                </tr>
+                                            </thead>
 
+                                            <tbody className="divide-y divide-slate-100">
+                                                {detailObservacion.data.observaciones.map((item, index) => (
+                                                    <tr key={index} className="hover:bg-sky-50">
+                                                        <td className="px-3 py-2 max-w-md break-words">
+                                                            {item.observacion}
+                                                        </td>
+                                                        <td className="px-3 py-2 font-medium">
+                                                            {item.usuario}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-[8px] text-slate-500">
+                                                            {new Date(item.fecha_actualizacion).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </ModalBody>
-
             </Modal>
 
 

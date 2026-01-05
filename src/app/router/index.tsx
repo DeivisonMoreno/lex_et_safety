@@ -8,6 +8,7 @@ import LoaderLex from "../../pages/loaders/Loader";
 import Procesos from "../../pages/proceso/Procesos";
 import NuevoProceso from "../../pages/proceso/NuevoProceso";
 import BasesProcesales from "../../pages/proceso/BasesProcesales";
+import NuevoJuzgado from "../../pages/juzgados/NuevoJuzgado";
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +50,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <BasesProcesales />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/NuevoJuzgado",
+    element: (
+      <ProtectedRoute>
+        <NuevoJuzgado />
       </ProtectedRoute>
     ),
   },
