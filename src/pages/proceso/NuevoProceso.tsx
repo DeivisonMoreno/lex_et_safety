@@ -6,6 +6,7 @@ import { PlusCircleIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import Button from "../../components/ui/Button";
 import Swal from "sweetalert2";
 import { apiFetch } from "../../services/api";
+import LoaderLex from "../loaders/Loader";
 
 /* =======================
    TYPES
@@ -108,7 +109,7 @@ const NuevoProceso: React.FC = () => {
         subClasificacionAlterna: "",
 
         // METADATA
-        usuario: "",
+        usuario: usuario,
     });
 
     /* =======================
@@ -142,8 +143,8 @@ const NuevoProceso: React.FC = () => {
 
                 setCatalogos(data.data);
             } catch (err) {
-                console.error(err);
                 setError(true);
+                console.error(error);
             } finally {
                 setLoading(false);
             }
@@ -300,6 +301,8 @@ const NuevoProceso: React.FC = () => {
             setLoading(false);
         }
     };
+
+    if (loading) return <LoaderLex />;
 
     return (
         <div className="h-screen w-screen flex flex-col bg-slate-100">

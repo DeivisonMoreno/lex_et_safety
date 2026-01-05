@@ -16,7 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import LogoLex from "../../assets/img/logos/logo_lex.png";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -30,8 +30,6 @@ const navigation = [
 const NavBar: React.FC = () => {
     const [usuario, setUsuario] = useState<string>("");
     const { logout } = useAuth();
-
-    const navigate = useNavigate();
 
     useEffect(() => {
         const storedUsuario = localStorage.getItem("usuario");

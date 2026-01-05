@@ -77,8 +77,8 @@ const BasesProcesales: React.FC = () => {
             a.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            console.error(err);
             setError(true);
+            console.error(error);
         } finally {
             setLoading(false);
             setSelectedInforme(null);

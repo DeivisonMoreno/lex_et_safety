@@ -16,8 +16,6 @@ import {
     ChevronDownIcon
 } from "@heroicons/react/24/outline";
 import LogoLex from '../../assets/img/logos/logo_lex.png'
-
-import { Fragment } from "react";
 import { Link } from "react-router-dom";
 
 const navigation = [

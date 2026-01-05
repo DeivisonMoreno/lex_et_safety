@@ -38,18 +38,6 @@ const Procesos: React.FC = () => {
     const [search, setSearch] = useState("");
 
     const navigate = useNavigate();
-
-    const redStates = ["DEVOLUCION", "TERMINACIÓN"];
-
-    /* =======================
-       ACTIONS
-    ======================= */
-
-    const verProceso = (id: number) => {
-        localStorage.setItem("idProceso", String(id));
-        navigate("/proceso");
-    };
-
     /* =======================
        FETCH
     ======================= */

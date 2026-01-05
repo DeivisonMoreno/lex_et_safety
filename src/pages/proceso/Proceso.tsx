@@ -1,26 +1,20 @@
 import React, { useEffect, useState, type ReactNode } from "react";
 import Card from "../../components/ui/card/Card";
-import { CardHeader } from "../../components/ui/card/CardHeader";
 import { CardBody } from "../../components/ui/card/CardBody";
-import { CardTitle } from "../../components/ui/card/CardTitle";
 import LoaderLex from "../loaders/Loader";
 import Swal from "sweetalert2";
 import {
     ModalHeader,
     ModalBody,
-    ModalFooter,
-    ModalActions,
 } from "../../components/modal/ModalParts";
 import { Modal } from "../../components/modal/Modal";
 import { useModal } from "../../context/ModalContext";
-import Button from "../../components/ui/Button";
 import {
     EyeIcon,
     IdentificationIcon,
     XMarkIcon,
     PencilIcon,
     ChatBubbleBottomCenterIcon,
-    CircleStackIcon,
 } from "@heroicons/react/24/outline";
 
 import { apiFetch } from "../../services/api";

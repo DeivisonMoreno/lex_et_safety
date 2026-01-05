@@ -4,6 +4,7 @@ import LogoLex from "../../assets/img/logos/logo_lex.png";
 import { apiFetch } from "../../services/api";
 import { authStorage } from "../../services/authStorage";
 import { useAuth } from "../../hooks/useAuth";
+import LoaderLex from "../loaders/Loader";
 
 export interface Usuario {
     id: number;
@@ -51,11 +52,14 @@ function Login() {
             }
         } catch (err) {
             setError("Credenciales incorrectas");
+            console.error(error);
+            
         } finally {
             setLoading(false);
         }
     };
 
+    if (loading) return <LoaderLex />;
     return (
         <>
             <div className=" w-full bg-gray-900 flex items-center justify-center min-h-screen">

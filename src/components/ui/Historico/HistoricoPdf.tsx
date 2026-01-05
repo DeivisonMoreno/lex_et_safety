@@ -3,7 +3,6 @@ import LoaderLex from "../../../pages/loaders/Loader";
 import {
     CloudArrowDownIcon,
     ArrowUpTrayIcon,
-    InboxIcon,
     NewspaperIcon,
     TrashIcon
 } from "@heroicons/react/24/outline";
@@ -66,6 +65,8 @@ const HistoricoPdf: React.FC<Props> = ({ idProceso, idRelacionSub }) => {
             setInfo(data.data);
         } catch {
             setError("No se pudo cargar la información.");
+            console.error(errorFetch);
+            
         } finally {
             setLoading(false);
         }

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import './index.css'
 import LogoLex from './assets/img/logos/logo_lex.png'
 

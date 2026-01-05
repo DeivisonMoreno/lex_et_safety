@@ -49,22 +49,11 @@ const positionClasses: Record<ModalPosition, string> = {
   right: "items-center justify-end pr-4",
 };
 
-
-type TransitionConfig = {
-  enter: string;
-  enterFrom: string;
-  enterTo: string;
-  leave: string;
-  leaveFrom: string;
-  leaveTo: string;
-};
-
 type ModalProps = {
   id: string;
   children: ReactNode;
   size?: ModalSize;
   position?: ModalPosition;
-  transition?: TransitionConfig;
 };
 
 
@@ -73,7 +62,6 @@ export function Modal({
   children,
   size = "md",
   position = "center",
-  transition,
 }: ModalProps) {
   const { modals, closeModal } = useModal();
   const isOpen = modals[id] ?? false;

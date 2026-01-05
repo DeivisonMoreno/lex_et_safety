@@ -164,6 +164,8 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
         setInfoDataAlterna(altData);
       } catch {
         setError("No se pudo cargar la información.");
+        console.error(errorC);
+        
       } finally {
         setLoading(false);
       }

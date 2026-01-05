@@ -1,5 +1,5 @@
 import LogoLex from '../../assets/img/logos/logo_lex.png';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function NotFound2() {
     const navigate = useNavigate();
