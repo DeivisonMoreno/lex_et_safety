@@ -196,6 +196,11 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
       res.success
         ? success("Subetapa actualizada correctamente")
         : error("No se pudo actualizar");
+      if (res.success) {
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000);
+      }
     } catch {
       error("Error actualizando subetapa");
     } finally {
@@ -250,6 +255,12 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
       res.success
         ? success("Subetapa alterna actualizada")
         : error("No se pudo actualizar");
+
+      if (res.success) {
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000);
+      }
     } catch {
       error("Error actualizando subetapa alterna");
     } finally {
@@ -631,10 +642,10 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
                 <button
                   className="flex items-center gap-2 cursor-pointer rounded-lg bg-emerald-100 px-5 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
                   onClick={() => {
-                    if (idAlterna === null) {
-                      actualizarSubetapaAction();
-                    } else {
+                    if (idRegistroAlterna) {
                       actualizarSubetapaAlternaAction();
+                    } else {
+                      actualizarSubetapaAction();
                     }
                   }}
 
