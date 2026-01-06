@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
+import { apiFetch } from "../../../services/api";
 import LoaderLex from "../../../pages/loaders/Loader";
 
 
@@ -38,36 +39,38 @@ const HistoricoSubetapa: React.FC<ProcesoProps> = ({ idProceso, idRelacionSub })
         const fetchData = async () => {
             setLoading(true);
             setError(null);
+
             try {
-                const res = await fetch(
-                    "https://belle-prosaic-darrin.ngrok-free.dev/api/historyActSub",
+                const data = await apiFetch<payloadHistorico>(
+                    "/historyActSub",
                     {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "x-token": token
-                        },
+                        auth: true,
                         body: JSON.stringify({
                             idProceso,
-                            idRelacionSub
-                        })
+                            idRelacionSub,
+                        }),
                     }
                 );
 
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = (await res.json()) as payloadHistorico;
-                console.log(`Estos son los datos recibidos ${data}`);
+                console.log("Datos recibidos:", data);
 
-                if (mounted) setInfo(data.data);
-                console.log(info);
+                if (mounted) {
+                    setInfo(data.data);
+                }
 
             } catch (err) {
                 console.error("Error cargando información del proceso", err);
-                if (mounted) setError("No se pudo cargar la información.");
+                if (mounted) {
+                    setError("No se pudo cargar la información.");
+                }
             } finally {
-                if (mounted) setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         };
+
 
         fetchData();
         return () => { mounted = false };

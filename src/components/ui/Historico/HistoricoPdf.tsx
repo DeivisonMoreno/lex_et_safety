@@ -7,6 +7,7 @@ import {
     TrashIcon
 } from "@heroicons/react/24/outline";
 import { useAlert } from "../../../hooks/useAlert";
+import { apiFetch, apiFetchBlob } from "../../../services/api";
 import clsx from "clsx";
 
 interface Props {
@@ -47,26 +48,30 @@ const HistoricoPdf: React.FC<Props> = ({ idProceso, idRelacionSub }) => {
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
+
         try {
-            const res = await fetch(
-                "https://belle-prosaic-darrin.ngrok-free.dev/api/listDocuments",
+            const result = await apiFetch<PayloadPdf>(
+                "/listDocuments",
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-token": token
-                    },
-                    body: JSON.stringify({ idProceso, idRelacionSub })
+                    auth: true,
+                    body: JSON.stringify({
+                        idProceso,
+                        idRelacionSub,
+                    }),
                 }
             );
 
-            if (!res.ok) throw new Error();
-            const data = (await res.json()) as PayloadPdf;
-            setInfo(data.data);
-        } catch {
+            if (!result.success) {
+                throw new Error("Error al cargar documentos");
+            }
+
+            setInfo(result.data);
+
+        } catch (error) {
+            console.error(error);
             setError("No se pudo cargar la información.");
-            console.error(errorFetch);
-            
         } finally {
             setLoading(false);
         }
@@ -86,76 +91,87 @@ const HistoricoPdf: React.FC<Props> = ({ idProceso, idRelacionSub }) => {
         formData.append("usuario", usuario);
 
         setLoading(true);
+        setError(null);
+
         try {
-            const res = await fetch(
-                "https://belle-prosaic-darrin.ngrok-free.dev/api/uploadDocumento",
+            const result = await apiFetch<{ success: boolean }>(
+                "/uploadDocumento",
                 {
                     method: "POST",
-                    headers: { "x-token": token },
-                    body: formData
+                    auth: true,
+                    body: formData,
                 }
             );
 
-            if (!res.ok) throw new Error();
+            if (!result.success) {
+                throw new Error("Error cargando documentos");
+            }
+
             await fetchData();
             setFiles(null);
-        } catch {
+
+        } catch (err) {
+            console.error(err);
             setError("Error cargando documentos.");
         } finally {
             setLoading(false);
         }
     };
 
+
     const downloadDocumento = async (id: number) => {
         try {
-            const res = await fetch(
-                "https://belle-prosaic-darrin.ngrok-free.dev/api/downloadDocumento",
+            const blob = await apiFetchBlob(
+                "/downloadDocumento",
                 {
                     method: "POST",
+                    auth: true,
                     headers: {
                         "Content-Type": "application/json",
-                        "x-token": token
                     },
-                    body: JSON.stringify({ id })
+                    body: JSON.stringify({ id }),
                 }
             );
 
-            if (!res.ok) throw new Error();
-            const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
             setTimeout(() => URL.revokeObjectURL(url), 5000);
-        } catch {
+
+        } catch (err) {
+            console.error(err);
             setError("No se pudo descargar el documento.");
         }
     };
 
+
+
     const deleteDocument = async (id: number) => {
         try {
-            const res = await fetch(
-                "https://belle-prosaic-darrin.ngrok-free.dev/api/deleteDocument",
+            const result = await apiFetch<{ success: boolean; message?: string }>(
+                "/deleteDocument",
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-token": token
-                    },
+                    auth: true,
                     body: JSON.stringify({
                         id,
-                        usuario
-                    })
+                        usuario,
+                    }),
                 }
             );
 
-            const data = (await res.json());
-            if (data.success) {
-                success('Archivo eliminado correctamente');
+            if (result.success) {
+                success("Archivo eliminado correctamente");
                 await fetchData();
+            } else {
+                throw new Error(result.message);
             }
-        } catch {
-            error('Algo ocurrio al eliminar el documento, intente nuevamente')
+
+        } catch (err) {
+            console.error(err);
+            error("Algo ocurrió al eliminar el documento, intente nuevamente");
         }
     };
+
 
     if (loading) return <LoaderLex />;
 

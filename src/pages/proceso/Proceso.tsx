@@ -264,6 +264,38 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
         await fetchDetailProcess();
     };
 
+    const crearObservacion = async () => {
+        if (!newObservacion.trim()) return;
+
+        try {
+            setSendingObservacion(true);
+
+            const result = await apiFetch<any>(
+                "/newObservationProcess",
+                {
+                    method: "POST",
+                    auth: true,
+                    body: JSON.stringify({
+                        idProceso,
+                        observacion: newObservacion,
+                        usuario,
+                    }),
+                }
+            );
+
+            if (result?.success === false) {
+                throw new Error(result?.message || "Error al guardar observación");
+            }
+
+            setNewObservacion("");
+            await fetchObservacionProcess();
+
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSendingObservacion(false);
+        }
+    };
 
     /* =======================
        HELPERS
@@ -661,41 +693,17 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                                 <div className="mt-2 flex justify-end">
                                     <button
                                         disabled={!newObservacion.trim() || sendingObservacion}
-                                        onClick={async () => {
-                                            if (!newObservacion.trim()) return;
-
-                                            setSendingObservacion(true);
-
-                                            await fetch(
-                                                "https://belle-prosaic-darrin.ngrok-free.dev/api/newObservationProcess",
-                                                {
-                                                    method: "POST",
-                                                    headers: {
-                                                        "Content-Type": "application/json",
-                                                        "x-token": token,
-                                                    },
-                                                    body: JSON.stringify({
-                                                        idProceso,
-                                                        observacion: newObservacion,
-                                                        usuario,
-                                                    }),
-                                                }
-                                            );
-
-                                            setNewObservacion("");
-                                            await fetchObservacionProcess();
-                                            setSendingObservacion(false);
-                                        }}
+                                        onClick={crearObservacion}
                                         className="
-              inline-flex items-center gap-1.5
-              rounded-md bg-sky-600
-              px-3 py-1
-              text-[9px] font-medium text-white
-              shadow-sm
-              transition
-              hover:bg-sky-700
-              disabled:cursor-not-allowed disabled:bg-sky-300
-            "
+                                            inline-flex items-center gap-1.5
+                                            rounded-md bg-sky-600
+                                            px-3 py-1
+                                            text-[9px] font-medium text-white
+                                            shadow-sm
+                                            transition
+                                            hover:bg-sky-700
+                                            disabled:cursor-not-allowed disabled:bg-sky-300
+                                        "
                                     >
                                         {sendingObservacion ? "Guardando..." : "Agregar observación"}
                                     </button>
