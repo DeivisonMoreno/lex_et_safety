@@ -165,7 +165,7 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
       } catch {
         setError("No se pudo cargar la información.");
         console.error(errorC);
-        
+
       } finally {
         setLoading(false);
       }
@@ -645,7 +645,12 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
               </div>
             </div>
           </div>
-          <HistoricoSubetapa idProceso={idProceso} idRelacionSub={String(idRelacionSub)} />
+          <HistoricoSubetapa
+            idProceso={idProceso}
+            idRelacionSub={String(idRelacionSub)}
+            idRegistroAlterna={idRegistroAlterna ? String(idRegistroAlterna) : undefined}
+          />
+
         </ModalBody>
       </Modal>
       <Modal id="editarPdf" size="xl" position="top">

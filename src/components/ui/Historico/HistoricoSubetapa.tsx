@@ -8,6 +8,7 @@ import LoaderLex from "../../../pages/loaders/Loader";
 interface ProcesoProps {
     idProceso: string;
     idRelacionSub: string;
+    idRegistroAlterna?: string;
 }
 
 export interface Historico {
@@ -22,7 +23,7 @@ export interface payloadHistorico {
     data: Historico[];
 }
 
-const HistoricoSubetapa: React.FC<ProcesoProps> = ({ idProceso, idRelacionSub }) => {
+const HistoricoSubetapa: React.FC<ProcesoProps> = ({ idProceso, idRelacionSub, idRegistroAlterna }) => {
     const [info, setInfo] = useState<Historico[]>([]);
     const [token, setToken] = React.useState('');
     const [loading, setLoading] = React.useState<boolean>(true);
@@ -41,19 +42,23 @@ const HistoricoSubetapa: React.FC<ProcesoProps> = ({ idProceso, idRelacionSub })
             setError(null);
 
             try {
+                const payload: Record<string, string> = {
+                    idProceso,
+                    idRelacionSub,
+                };
+
+                if (idRegistroAlterna) {
+                    payload.idRegistroAlterna = idRegistroAlterna;
+                }
+
                 const data = await apiFetch<payloadHistorico>(
                     "/historyActSub",
                     {
                         method: "POST",
                         auth: true,
-                        body: JSON.stringify({
-                            idProceso,
-                            idRelacionSub,
-                        }),
+                        body: JSON.stringify(payload),
                     }
                 );
-
-                console.log("Datos recibidos:", data);
 
                 if (mounted) {
                     setInfo(data.data);
