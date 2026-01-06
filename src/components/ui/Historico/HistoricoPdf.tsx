@@ -70,8 +70,8 @@ const HistoricoPdf: React.FC<Props> = ({ idProceso, idRelacionSub }) => {
             setInfo(result.data);
 
         } catch (error) {
-            console.error(error);
             setError("No se pudo cargar la información.");
+            console.error(errorFetch);
         } finally {
             setLoading(false);
         }
