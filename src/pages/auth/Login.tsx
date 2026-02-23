@@ -5,6 +5,7 @@ import { apiFetch } from "../../services/api";
 import { authStorage } from "../../services/authStorage";
 import { useAuth } from "../../hooks/useAuth";
 import LoaderLex from "../loaders/Loader";
+import Swal from "sweetalert2";
 
 export interface Usuario {
     id: number;
@@ -52,8 +53,13 @@ function Login() {
             }
         } catch (err) {
             setError("Credenciales incorrectas");
+            Swal.fire({
+                icon: "error",
+                title: "Lo sentimos",
+                text: "Credenciales incorrectas, intentelo nuevamente",
+            });
             console.error(error);
-            
+
         } finally {
             setLoading(false);
         }

@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import {
     ModalHeader,
     ModalBody,
+    ModalFooter,
 } from "../../components/modal/ModalParts";
 import { Modal } from "../../components/modal/Modal";
 import { useModal } from "../../context/ModalContext";
@@ -15,8 +16,10 @@ import {
     XMarkIcon,
     PencilIcon,
     ChatBubbleBottomCenterIcon,
+    CreditCardIcon,
+    PlusIcon,
 } from "@heroicons/react/24/outline";
-
+import Button from "../../components/ui/Button";
 import { apiFetch } from "../../services/api";
 
 /* =======================
@@ -63,7 +66,6 @@ interface DatosTipoProceso extends GenericRecord {
 
 interface DatosAdicionales extends GenericRecord {
     id: string;
-    id_proceso: number;
     radicado: string;
     codigo_sapro: string;
     codigo_custodia: string;
@@ -91,6 +93,15 @@ interface DatosTitular extends GenericRecord {
     ultima_observacion: string;
 }
 
+interface DatosBasicos extends GenericRecord {
+    cuantia: string;
+    juzgado_inicial: string;
+    juzgado_conocimiento: string;
+    clasificacion: string;
+    sub_clasificacion: string;
+    sub_clasificacion_alterna: string;
+}
+
 
 interface DetailProcessData {
     success: boolean;
@@ -98,6 +109,22 @@ interface DetailProcessData {
         datos_tipo_proceso: DatosTipoProceso;
         datos_adicionales: DatosAdicionales;
         datos_titular: DatosTitular;
+        datos_basicos: DatosBasicos
+    };
+}
+
+export interface DataCredit {
+    id: number;
+    obligacion: string;
+    capital: string;
+    diasmora: string;
+}
+
+
+interface DetailCredit {
+    success: boolean;
+    data: {
+        obligaciones: DataCredit[];
     };
 }
 
@@ -123,6 +150,56 @@ interface UpdateFieldPayload {
     valor: string | number;
 }
 
+
+interface OptionBase {
+    id: number;
+}
+
+interface Cuantia extends OptionBase {
+    cuantia: string;
+}
+
+interface TipoProceso extends OptionBase {
+    tipo_proceso: string;
+}
+
+interface Juzgado extends OptionBase {
+    juzgado: string;
+}
+
+interface Dependiente extends OptionBase {
+    dependiente: string;
+}
+
+interface Clasificacion extends OptionBase {
+    nombre: string;
+}
+
+
+interface DataNewProcessResponse {
+    success: boolean;
+    data: {
+        cuantia: Cuantia[];
+        tipo_proceso: TipoProceso[];
+        juzgado: Juzgado[];
+        dependiente: Dependiente[];
+        clasificacion: Clasificacion[];
+    };
+}
+
+type CatalogKey = keyof DataNewProcessResponse["data"];
+
+const FIELD_CATALOG_MAP: Record<string, CatalogKey> = {
+    cuantia_id: "cuantia",
+    tipo_proceso_id: "tipo_proceso",
+    juzgado_conocimiento_id: "juzgado",
+    juzgado_inicial_id: "juzgado",
+    clasificacion_id: "clasificacion",
+    sub_clasificacion_id: "clasificacion",
+    sub_clasificacion_alterna_id: "clasificacion",
+};
+
+
 /* =======================
    COMPONENT
 ======================= */
@@ -140,6 +217,182 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
     const [sendingObservacion, setSendingObservacion] = useState(false);
     const [token, setToken] = useState("");
     const [usuario, setUsuario] = React.useState<string>('');
+    const [loadingCreditos, setLoadingCreditos] = useState(false);
+    const [obligaciones, setObligaciones] = useState<DetailCredit | null>(null);
+    const [creating, setCreating] = useState(false);
+
+    const [newObligacion, setNewObligacion] = useState({
+        obligacion: "",
+        capital: "",
+        diasmora: "",
+    });
+
+    const [editingObligaciones, setEditingObligaciones] = useState<Record<number, any>>({});
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+
+    const getCatalogOptions = (
+        campo: string,
+        catalogos: DataNewProcessResponse["data"] | null
+    ) => {
+        if (!catalogos) return null;
+
+        const catalogKey = FIELD_CATALOG_MAP[campo];
+        if (!catalogKey) return null;
+
+        const labelKeyMap: Record<CatalogKey, string> = {
+            cuantia: "cuantia",
+            tipo_proceso: "tipo_proceso",
+            juzgado: "juzgado",
+            dependiente: "dependiente",
+            clasificacion: "nombre",
+        };
+
+        return catalogos[catalogKey].map(item => ({
+            id: item.id,
+            label: (item as any)[labelKeyMap[catalogKey]],
+        }));
+    };
+
+    function resolveCatalogId(
+        campo: string,
+        label: string,
+        catalogos: DataNewProcessResponse["data"] | null
+    ): number | "" {
+        if (!catalogos || !label) return "";
+
+        const catalogKey = FIELD_CATALOG_MAP[campo];
+        if (!catalogKey) return "";
+
+        const catalog = catalogos[catalogKey];
+
+        const found = catalog.find(
+            (item: any) =>
+                Object.values(item).some(v => String(v).toLowerCase() === label.toLowerCase())
+        );
+
+
+        return found?.id ?? "";
+    }
+
+
+    const isCatalogField = (campo: string) =>
+        Object.prototype.hasOwnProperty.call(FIELD_CATALOG_MAP, campo);
+
+    useEffect(() => {
+        if (obligaciones?.data?.obligaciones) {
+            const initialState: typeof editingObligaciones = {};
+
+            obligaciones.data.obligaciones.forEach((item) => {
+                initialState[item.id] = {
+                    obligacion: item.obligacion,
+                    capital: item.capital,
+                    diasmora: item.diasmora,
+                };
+            });
+
+            setEditingObligaciones(initialState);
+        }
+    }, [obligaciones]);
+
+    const handleChangeObligacion = (
+        id: number,
+        field: "obligacion" | "capital" | "diasmora",
+        value: string
+    ) => {
+        setEditingObligaciones(prev => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                [field]: value,
+            },
+        }));
+    };
+
+
+
+    const actualizarObligacion = async (id: number) => {
+        const payload = editingObligaciones[id];
+        if (!payload) return;
+
+        try {
+            setUpdatingId(id);
+
+            const data = await apiFetch<any>(
+                "/actualizarObligacion",
+                {
+                    method: "POST",
+                    auth: true,
+                    body: JSON.stringify({
+                        id,
+                        idProceso,
+                        ...payload,
+                    }),
+                }
+            );
+
+            if (!data?.success) {
+                throw new Error("Error al actualizar obligación");
+            }
+
+            fetchObligaciones();
+            setEditingObligaciones(prev => {
+                const copy = { ...prev };
+                delete copy[id];
+                return copy;
+            });
+
+        } catch (error) {
+            console.error("Error actualizando obligación", error);
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+
+
+
+    const crearObligacion = async () => {
+        if (creating) return;
+        if (!newObligacion.obligacion || !newObligacion.capital) return;
+
+        try {
+            setCreating(true);
+
+            const payload = {
+                idProceso,
+                obligacion: newObligacion.obligacion.trim(),
+                capital: newObligacion.capital,
+                diasmora: newObligacion.diasmora || "0",
+            };
+
+            const data = await apiFetch<{ success: boolean }>(
+                "/crearObligacion",
+                {
+                    method: "POST",
+                    auth: true,
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!data?.success) {
+                throw new Error("Error al crear obligación");
+            }
+            setNewObligacion({
+                obligacion: "",
+                capital: "",
+                diasmora: "",
+            });
+
+            await fetchObligaciones();
+            closeModal("nuevaObligacion");
+
+        } catch (error) {
+            console.error("Error creando obligación", error);
+        } finally {
+            setCreating(false);
+        }
+    };
 
 
     const [editField, setEditField] = useState<{
@@ -184,6 +437,33 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
     }, [idProceso, token]);
 
 
+    const [catalogos, setCatalogos] =
+        useState<DataNewProcessResponse["data"] | null>(null);
+    useEffect(() => {
+        const fetchDataProcess = async () => {
+            try {
+                setLoading(true);
+
+                const data = await apiFetch<DataNewProcessResponse>(
+                    "/dataNewProcess",
+                    {
+                        method: "POST",
+                        auth: true,
+                    }
+                );
+
+                setCatalogos(data.data);
+            } catch (err) {
+                console.error(err);
+
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDataProcess();
+    }, []);
+
     /* =======================
        FETCH DETALLE
     ======================= */
@@ -201,6 +481,27 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
 
         setDetail(data);
         setLoadingDetail(false);
+    };
+
+    /* =======================
+   FETCH DETALLE
+======================= */
+    const fetchObligaciones = async () => {
+        setLoadingCreditos(true);
+
+        const data = await apiFetch<DetailCredit>(
+            "/searchObligaciones",
+            {
+                method: "POST",
+                auth: true,
+                body: JSON.stringify({ idProceso }),
+            }
+        );
+
+        console.log(data);
+
+        setObligaciones(data);
+        setLoadingCreditos(false);
     };
 
     /* =======================
@@ -242,6 +543,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                     tabla,
                     campo,
                     valor,
+                    usuario,
                 }),
             }
         );
@@ -326,12 +628,14 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
 
     const EditableInfoRow = ({
         label,
-        value,
+        displayValue,
+        editValue,
         campo,
         tabla,
     }: {
         label: string;
-        value?: string | number;
+        displayValue?: string;
+        editValue?: string | number;
         campo: string;
         tabla: string;
     }) => (
@@ -339,7 +643,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
             <div>
                 <div className="text-xs text-slate-500">{label}</div>
                 <div className="text-xs font-medium text-slate-900">
-                    {value ?? "—"}
+                    {displayValue ?? "—"}
                 </div>
             </div>
 
@@ -348,7 +652,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                     setEditField({
                         tabla,
                         campo,
-                        valor: value ?? "",
+                        valor: editValue ?? "",
                     });
                     openModal("editField");
                 }}
@@ -358,7 +662,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
             </button>
         </div>
     );
-
+    
 
     const InfoCard = ({ title, children }: { title: string; children: ReactNode }) => (
         <div className="rounded-lg border border-slate-200 bg-white">
@@ -377,7 +681,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
     return (
         <>
             {/* CARD PRINCIPAL */}
-            <Card className="w-1/4" stretch>
+            <Card stretch>
                 <div className="flex items-center gap-3 p-4 border-b border-gray-300">
                     <div className="bg-sky-100 p-3 rounded-lg">
                         <IdentificationIcon className="h-6 w-6 text-sky-700" />
@@ -392,7 +696,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                     </div>
                 </div>
                 <CardBody className="p-0 overflow-y-auto">
-                    <div className="max-h-[720px] overflow-y-auto divide-y divide-gray-100">
+                    <div className="h-full overflow-y-auto divide-y divide-gray-100">
                         {info?.data?.datos_generales?.length ? (
                             Object.entries(info.data.datos_generales[0]).map(([key, value]) => {
                                 const formattedKey = key
@@ -465,6 +769,28 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                                 Observaciones Proceso
                             </span>
                         </button>
+                        <button
+                            type="button"
+                            className="
+                                group flex flex-col items-center justify-center gap-1
+                                rounded-lg border border-gray-200 bg-white
+                                px-2 py-2
+                                text-gray-600
+                                shadow-sm
+                                transition-all
+                                hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700
+                                focus:outline-none focus:ring-2 focus:ring-blue-400
+                            "
+                            onClick={() => {
+                                fetchObligaciones();
+                                openModal("obligacionesModal");
+                            }}
+                        >
+                            <CreditCardIcon className="h-4 w-4 transition-colors group-hover:text-blue-600" />
+                            <span className="leading-tight text-center text-xs">
+                                Obligaciones
+                            </span>
+                        </button>
                     </div>
 
                 </CardBody>
@@ -481,33 +807,64 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
 
                 <ModalBody>
                     {loadingDetail || !detail ? (
-                        <div className="text-center py-12">Cargando...</div>
+                        <div className="text-center py-12 text-sm text-slate-400">
+                            Cargando...
+                        </div>
                     ) : (
-                        <div className="grid md:grid-cols-3 gap-4">
+                        <div className="grid md:grid-cols-4 gap-4">
+
+                            {/* DATOS BÁSICOS */}
+                            <InfoCard title="Datos Básicos">
+                                {filterRenderableFields(detail?.data?.datos_basicos ?? {}).map(
+                                    ([key, value]) => {
+                                        const campo = `${key}_id`;
+
+                                        const editValue = resolveCatalogId(
+                                            campo,
+                                            value as string,
+                                            catalogos
+                                        );
+
+                                        return (
+                                            <EditableInfoRow
+                                                key={key}
+                                                label={formatLabel(key)}
+                                                displayValue={value as string}
+                                                editValue={editValue}
+                                                campo={campo}
+                                                tabla="tbl_proceso"
+                                            />
+                                        );
+                                    }
+                                )}
+                            </InfoCard>
                             {/* DATOS ADICIONALES */}
                             <InfoCard title="Datos Adicionales">
                                 {filterRenderableFields(detail?.data?.datos_adicionales ?? {}).map(
-                                    ([key, value]) => (
-                                        <EditableInfoRow
-                                            key={key}
-                                            label={formatLabel(key)}
-                                            value={value ?? ""}
-                                            campo={key}
-                                            tabla={detail?.data?.datos_adicionales?.tabla ?? ""}
-                                        />
-                                    )
+                                    ([key, value]) => {
+                                        if (key !== 'proceso_id') {
+                                            return (
+                                                <EditableInfoRow
+                                                    key={key}
+                                                    label={formatLabel(key)}
+                                                    displayValue={value as string}
+                                                    campo={key}
+                                                    tabla={detail?.data?.datos_adicionales?.tabla ?? ""}
+                                                />
+                                            );
+                                        }
+                                    }
                                 )}
                             </InfoCard>
 
-
-                            {/* VEHÍCULO */}
+                            {/* DATOS TIPO PROCESO */}
                             <InfoCard title="Datos Tipo Proceso">
                                 {filterRenderableFields(detail?.data?.datos_tipo_proceso ?? {}).map(
                                     ([key, value]) => (
                                         <EditableInfoRow
                                             key={key}
                                             label={formatLabel(key)}
-                                            value={value ?? ""}
+                                            displayValue={value as string}
                                             campo={key}
                                             tabla={detail.data.datos_tipo_proceso.tabla}
                                         />
@@ -523,7 +880,6 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                                             key={key}
                                             label={formatLabel(key)}
                                             value={value ?? ""}
-
                                         />
                                     )
                                 )}
@@ -531,6 +887,7 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                         </div>
                     )}
                 </ModalBody>
+
             </Modal>
 
             <Modal id="editField" size="sm">
@@ -563,28 +920,46 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                                 Nuevo valor
                             </label>
 
-                            <input
-                                autoFocus
-                                className="
-                        w-full
-                        rounded-lg
-                        border border-slate-300
-                        bg-white
-                        px-3 py-2
-                        text-sm text-slate-900
-                        shadow-sm
-                        transition
-                        focus:border-blue-500
-                        focus:ring-2 focus:ring-blue-200
-                        outline-none
-                    "
-                                value={editField?.valor ?? ""}
-                                onChange={(e) =>
-                                    setEditField(prev =>
-                                        prev ? { ...prev, valor: e.target.value } : null
-                                    )
-                                }
-                            />
+                            {editField && isCatalogField(editField.campo) ? (
+                                <select
+                                    autoFocus
+                                    value={editField.valor}
+                                    onChange={(e) =>
+                                        setEditField(prev =>
+                                            prev ? { ...prev, valor: Number(e.target.value) } : null
+                                        )
+                                    }
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                >
+                                    {getCatalogOptions(editField.campo, catalogos)?.map(opt => (
+                                        <option key={opt.id} value={opt.id}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    autoFocus
+                                    value={editField?.valor ?? ""}
+                                    onChange={(e) =>
+                                        setEditField(prev =>
+                                            prev ? { ...prev, valor: e.target.value } : null
+                                        )
+                                    }
+                                    className="
+                                        w-full
+                                        rounded-lg
+                                        border border-slate-300
+                                        bg-white
+                                        px-3 py-2
+                                        text-sm
+                                        shadow-sm
+                                        focus:border-blue-500
+                                        focus:ring-2 focus:ring-blue-200
+                                        outline-none
+                                    "
+                                />
+                            )}
                         </div>
 
                         {/* ACTIONS */}
@@ -756,7 +1131,321 @@ const Proceso: React.FC<ProcesoProps> = ({ idProceso }) => {
                 </ModalBody>
             </Modal>
 
+            <Modal id="obligacionesModal" size="lg">
+                <ModalHeader>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-slate-800">
+                            Obligaciones
+                        </h3>
 
+                        <button
+                            onClick={() => closeModal("obligacionesModal")}
+                            className="
+                    rounded-md p-1
+                    text-slate-400 hover:text-slate-600
+                    hover:bg-slate-100
+                    transition
+                "
+                        >
+                            <XMarkIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                </ModalHeader>
+
+                <ModalBody>
+                    {loadingCreditos ? (
+                        <div className="py-10 text-center text-xs text-slate-400">
+                            Cargando obligaciones…
+                        </div>
+                    ) : (
+                        <div className="space-y-3 max-h-[420px] overflow-y-auto">
+                            {obligaciones?.data?.obligaciones?.length ? (
+                                obligaciones.data.obligaciones.map(item => {
+                                    const local = editingObligaciones[item.id] || item;
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="
+                                    grid grid-cols-12 gap-3
+                                    items-center
+                                    rounded-lg border border-slate-200
+                                    bg-white
+                                    px-4 py-3
+                                    shadow-sm
+                                    hover:border-indigo-300
+                                    transition
+                                "
+                                        >
+                                            {/* Obligación */}
+                                            <div className="col-span-12 md:col-span-4">
+                                                <label className="block text-[10px] text-slate-500 mb-1">
+                                                    Obligación
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={local.obligacion}
+                                                    onChange={e =>
+                                                        handleChangeObligacion(
+                                                            item.id,
+                                                            "obligacion",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="
+                                            w-full rounded-md
+                                            border border-slate-300
+                                            px-2 py-1
+                                            text-xs
+                                            focus:border-sky-500
+                                            focus:ring-1 focus:ring-sky-500
+                                        "
+                                                />
+                                            </div>
+
+                                            {/* Capital */}
+                                            <div className="col-span-6 md:col-span-3">
+                                                <label className="block text-[10px] text-slate-500 mb-1">
+                                                    Capital
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={local.capital}
+                                                    onChange={e =>
+                                                        handleChangeObligacion(
+                                                            item.id,
+                                                            "capital",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="
+                                            w-full rounded-md
+                                            border border-slate-300
+                                            px-2 py-1
+                                            text-xs
+                                            text-right
+                                            focus:border-sky-500
+                                            focus:ring-1 focus:ring-sky-500
+                                        "
+                                                />
+                                            </div>
+
+                                            {/* Días mora */}
+                                            <div className="col-span-4 md:col-span-2">
+                                                <label className="block text-[10px] text-slate-500 mb-1">
+                                                    Días mora
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={local.diasmora}
+                                                    onChange={e =>
+                                                        handleChangeObligacion(
+                                                            item.id,
+                                                            "diasmora",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="
+                                            w-full rounded-md
+                                            border border-slate-300
+                                            px-2 py-1
+                                            text-xs
+                                            text-center
+                                            focus:border-sky-500
+                                            focus:ring-1 focus:ring-sky-500
+                                        "
+                                                />
+                                            </div>
+
+                                            {/* Acciones */}
+                                            <div className="col-span-2 md:col-span-3 flex justify-end gap-2 pt-4 md:pt-0">
+                                                <button
+                                                    onClick={() => actualizarObligacion(item.id)}
+                                                    disabled={updatingId === item.id}
+                                                    className="
+                                            rounded-md
+                                            bg-sky-600
+                                            px-3 py-1
+                                            text-[10px] text-white
+                                            hover:bg-sky-700
+                                            disabled:bg-slate-300
+                                            transition
+                                        "
+                                                >
+                                                    {updatingId === item.id
+                                                        ? "Actualizando..."
+                                                        : "Actualizar"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="py-8 text-center text-xs text-slate-400">
+                                    No hay obligaciones registradas
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button
+                        variant="info"
+                        size="sm"
+                        rightIcon={PlusIcon}
+                        typeStyle="solid"
+                        className="hover:cursor-pointer"
+                        onClick={() => openModal("nuevaObligacion")}
+                        disabled={creating}
+                    >
+                        {creating ? "Creando..." : "Crear Obligación"}
+                    </Button>
+                </ModalFooter>
+            </Modal>
+
+
+
+            <Modal id="nuevaObligacion" size="lg">
+                <ModalHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-semibold text-slate-800">
+                                Añadir obligación
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Registre los datos de la nueva obligación
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => closeModal("nuevaObligacion")}
+                            className="
+                    rounded-md p-1
+                    text-slate-400 hover:text-slate-600
+                    hover:bg-slate-100
+                    transition
+                "
+                        >
+                            <XMarkIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                </ModalHeader>
+
+                <ModalBody>
+                    <div className="space-y-6">
+
+                        {/* FORM */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                            {/* OBLIGACIÓN */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-medium text-slate-600">
+                                    Obligación
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: 123123213"
+                                    value={newObligacion.obligacion}
+                                    onChange={(e) =>
+                                        setNewObligacion({
+                                            ...newObligacion,
+                                            obligacion: e.target.value,
+                                        })
+                                    }
+                                    className="
+                            rounded-lg px-3 py-2 text-sm
+                            border border-slate-300
+                            focus:outline-none
+                            focus:ring-2 focus:ring-sky-500
+                        "
+                                />
+                            </div>
+
+                            {/* CAPITAL */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-medium text-slate-600">
+                                    Capital
+                                </label>
+                                <input
+                                    type="number"
+                                    placeholder="Ej: 15000000"
+                                    value={newObligacion.capital}
+                                    onChange={(e) =>
+                                        setNewObligacion({
+                                            ...newObligacion,
+                                            capital: e.target.value,
+                                        })
+                                    }
+                                    className="
+                            rounded-lg px-3 py-2 text-sm
+                            border border-slate-300
+                            focus:outline-none
+                            focus:ring-2 focus:ring-sky-500
+                        "
+                                />
+                            </div>
+
+                            {/* DÍAS DE MORA */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-medium text-slate-600">
+                                    Días en mora
+                                </label>
+                                <input
+                                    type="number"
+                                    placeholder="Ej: 45"
+                                    value={newObligacion.diasmora}
+                                    onChange={(e) =>
+                                        setNewObligacion({
+                                            ...newObligacion,
+                                            diasmora: e.target.value,
+                                        })
+                                    }
+                                    className="
+                            rounded-lg px-3 py-2 text-sm
+                            border border-slate-300
+                            focus:outline-none
+                            focus:ring-2 focus:ring-sky-500
+                        "
+                                />
+                            </div>
+                        </div>
+
+                        {/* INFO */}
+                        <div className="rounded-lg bg-sky-50 border border-sky-100 p-3">
+                            <p className="text-xs text-sky-700">
+                                Verifique que la información sea correcta antes de guardar.
+                            </p>
+                        </div>
+
+                    </div>
+                </ModalBody>
+
+                <ModalFooter>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="light"
+                            size="sm"
+                            typeStyle="ghost"
+                            onClick={() => closeModal("nuevaObligacion")}
+                            className="cursor-pointer"
+                        >
+                            Cancelar
+                        </Button>
+
+                        <Button
+                            variant="info"
+                            size="sm"
+                            typeStyle="solid"
+                            onClick={crearObligacion}
+                            disabled={creating || !newObligacion.obligacion || !newObligacion.capital}
+                            className="disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            {creating ? "Guardando..." : "Guardar obligación"}
+                        </Button>
+                    </div>
+                </ModalFooter>
+            </Modal>
         </>
     );
 };

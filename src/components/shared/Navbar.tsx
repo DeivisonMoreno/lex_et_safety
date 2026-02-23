@@ -39,7 +39,7 @@ const NavBar: React.FC = () => {
         }
     }, []);
     return (
-        <Disclosure as="nav" className="bg-white shadow-lg rounded-b-lg">
+        <Disclosure as="nav" className="h-16 bg-white shadow-lg shrink-0">
             {({ open }) => (
                 <>
                     {/* Desktop */}
@@ -53,7 +53,7 @@ const NavBar: React.FC = () => {
                                     className="h-14 w-auto"
                                 />
                                 <span className="text-xl text-gray-800 italic font-semibold">
-                                    Lex & Safety
+                                    Lex Et Safety
                                 </span>
                             </div>
 

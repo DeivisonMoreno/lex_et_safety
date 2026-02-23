@@ -43,7 +43,7 @@ const NavBar = () => {
                                     className="h-10 w-auto"
                                 />
                                 <span className="font-semibold text-xl text-gray-800">
-                                    Lex & Safety
+                                    Lex Et Safety
                                 </span>
                             </div>
 

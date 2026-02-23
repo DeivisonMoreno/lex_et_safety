@@ -21,6 +21,7 @@ import { useAlert } from "../../hooks/useAlert";
 import HistoricoSubetapa from "../../components/ui/Historico/HistoricoSubetapa";
 import HistoricoPdf from "../../components/ui/Historico/HistoricoPdf";
 import { apiFetch } from "../../services/api";
+import Swal from "sweetalert2";
 
 /* =======================
    Types
@@ -193,13 +194,22 @@ const Etapas: React.FC<ProcesoProps> = ({ idProceso }) => {
         }),
       });
 
-      res.success
-        ? success("Subetapa actualizada correctamente")
-        : error("No se pudo actualizar");
       if (res.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text: "Subetapa actualizada correctamente",
+          confirmButtonColor: "#0F4C81",
+        });
         setTimeout(() => {
           window.location.reload()
         }, 3000);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No fue posible actualizar la subetapa, comuniquese con desarrollo.",
+        });
       }
     } catch {
       error("Error actualizando subetapa");

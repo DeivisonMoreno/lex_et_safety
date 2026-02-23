@@ -7,6 +7,7 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   const isAuthenticated = Boolean(localStorage.getItem(TOKEN_KEY));
+  /* const isAuthenticated = true; */
 
   const login = useCallback((token: string) => {
     localStorage.setItem(TOKEN_KEY, token);

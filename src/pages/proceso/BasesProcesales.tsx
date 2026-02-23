@@ -25,6 +25,21 @@ const INFORMES: InformeType[] = [
         name: "base_procesal_general",
         description: "Contiene todos los procesos activos",
     },
+    {
+        label: "Base Medidas Cautelares",
+        name: "base_medidas_cautelares",
+        description: "Contiene todos los procesos con medidas",
+    },
+    {
+        label: "Base Demograficos",
+        name: "base_demograficos",
+        description: "Contiene todos los procesos con demograficos",
+    },
+    {
+        label: "Gestion diaria",
+        name: "base_diaria",
+        description: "Contiene todas las gestiones diarias a los procesos",
+    },
     /* {
         label: "Base Total",
         name: "base_total",
@@ -40,6 +55,8 @@ const BasesProcesales: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
     const [selectedInforme, setSelectedInforme] = useState<string | null>(null);
+    const [fechaGestion, setFechaGestion] = useState<string>("");
+
 
     /* =======================
        ACTION
@@ -53,24 +70,29 @@ const BasesProcesales: React.FC = () => {
 
             const token = authStorage.getToken();
 
+            const payload: any = { nombreInforme };
+
+            if (nombreInforme === "base_diaria") {
+                payload.fecha = fechaGestion;
+            }
+
             const res = await fetch(`${API_URL}/baseProcesal`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     ...(token ? { "x-token": token } : {}),
                 },
-                body: JSON.stringify({ nombreInforme }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const blob = await res.blob();
-
             const url = window.URL.createObjectURL(blob);
+
             const a = document.createElement("a");
             a.href = url;
             a.download = `${nombreInforme}.csv`;
-
             document.body.appendChild(a);
             a.click();
 
@@ -78,12 +100,16 @@ const BasesProcesales: React.FC = () => {
             window.URL.revokeObjectURL(url);
         } catch (err) {
             setError(true);
+            console.error(err);
             console.error(error);
+            
         } finally {
             setLoading(false);
             setSelectedInforme(null);
+            setFechaGestion("");
         }
     };
+
 
     return (
         <div className="h-screen w-screen flex flex-col bg-slate-100">
@@ -113,6 +139,7 @@ const BasesProcesales: React.FC = () => {
                         <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                             {INFORMES.map((informe) => {
                                 const selected = selectedInforme === informe.name;
+                                const isDiaria = informe.name === "base_diaria";
 
                                 return (
                                     <button
@@ -120,10 +147,10 @@ const BasesProcesales: React.FC = () => {
                                         type="button"
                                         onClick={() => setSelectedInforme(informe.name)}
                                         className={`relative rounded-xl border p-5 text-left transition-all
-                                        ${selected
+                    ${selected
                                                 ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200"
                                                 : "border-slate-200 hover:border-sky-300"}
-                                        `}
+                `}
                                     >
                                         {selected && (
                                             <CheckCircleIcon className="absolute top-4 right-4 h-6 w-6 text-sky-600" />
@@ -132,13 +159,38 @@ const BasesProcesales: React.FC = () => {
                                         <h3 className="text-sm font-semibold text-slate-800">
                                             {informe.label}
                                         </h3>
+
                                         <p className="text-sm text-slate-500 mt-1">
                                             {informe.description}
                                         </p>
+
+                                        {/* FECHA SOLO PARA GESTIÓN DIARIA */}
+                                        {selected && isDiaria && (
+                                            <div className="mt-4">
+                                                <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                    Fecha de gestión
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={fechaGestion}
+                                                    onChange={(e) => setFechaGestion(e.target.value)}
+                                                    className="
+                                                        w-full rounded-md
+                                                        border border-slate-300
+                                                        px-3 py-2
+                                                        text-sm
+                                                        bg-white
+                                                        focus:border-sky-500
+                                                        focus:ring-1 focus:ring-sky-500
+                                                    "
+                                                />
+                                            </div>
+                                        )}
                                     </button>
                                 );
                             })}
                         </div>
+
 
                         {/* FOOTER */}
                         <div className="px-6 py-4 border-t border-gray-300 flex justify-end">
@@ -146,9 +198,12 @@ const BasesProcesales: React.FC = () => {
                                 variant="info"
                                 size="sm"
                                 rightIcon={CloudArrowDownIcon}
-                                disabled={!selectedInforme || loading}
+                                disabled={
+                                    !selectedInforme ||
+                                    loading ||
+                                    (selectedInforme === "base_diaria" && !fechaGestion)
+                                }
                                 onClick={() => selectedInforme && generarInforme(selectedInforme)}
-                                className="cursor-pointer"
                                 typeStyle="outline"
                             >
                                 {loading ? "Generando..." : "Exportar Informe"}
